@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Control de Asistencia</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d2e;
+    --card2: #22263a;
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --green: #43e97b;
+    --red: #f5576c;
+    --yellow: #f9c74f;
+    --text: #e8eaf6;
+    --muted: #8b92b8;
+    --border: #2e3250;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg, #1a1d2e 0%, #22263a 100%);
+    border-bottom: 2px solid var(--accent);
+    padding: 18px 20px 14px;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 4px 24px rgba(108,99,255,0.15);
+  }
+  header h1 { font-size: 1.4rem; font-weight: 900; letter-spacing: -0.5px; }
+  header h1 span { color: var(--accent); }
+  .header-date { font-family: 'Space Mono', monospace; font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+
+  /* TABS */
+  .tabs { display: flex; background: var(--card); border-bottom: 1px solid var(--border); }
+  .tab { flex: 1; padding: 12px 8px; font-size: 0.82rem; font-weight: 700; text-align: center; cursor: pointer; color: var(--muted); border-bottom: 3px solid transparent; transition: all .2s; }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* VIEWS */
+  .view { display: none; padding: 16px; }
+  .view.active { display: block; }
+
+  /* SECTION CARDS */
+  .section-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .section-title {
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  /* INPUTS */
+  .input-row { display: flex; gap: 8px; }
+  input[type="text"], input[type="date"], select {
+    flex: 1;
+    background: var(--card2);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 14px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.9rem;
+    color: var(--text);
+    outline: none;
+    transition: border-color .2s;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--muted); }
+
+  /* BUTTONS */
+  .btn {
+    padding: 11px 18px;
+    border-radius: 10px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 800;
+    border: none;
+    cursor: pointer;
+    transition: all .15s;
+    white-space: nowrap;
+  }
+  .btn:active { transform: scale(0.96); }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #574fd6; }
+  .btn-danger { background: rgba(245,87,108,0.15); color: var(--red); border: 1px solid rgba(245,87,108,0.3); }
+  .btn-full { width: 100%; text-align: center; padding: 13px; font-size: 0.95rem; }
+  .btn-success { background: var(--green); color: #0f1117; }
+  .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--muted); }
+
+  /* STUDENT LIST (config) */
+  .student-item {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--card2); border-radius: 10px; padding: 10px 14px;
+    margin-bottom: 8px; border: 1px solid var(--border);
+    animation: fadeIn .2s ease;
+  }
+  .student-name { font-weight: 700; font-size: 0.92rem; }
+  .student-num { font-family: 'Space Mono', monospace; font-size: 0.7rem; color: var(--accent); margin-right: 10px; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+
+  /* ATTENDANCE VIEW */
+  .date-selector {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+  }
+  .date-selector input[type="date"] { flex: 1; }
+
+  .attend-item {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--card2); border-radius: 12px; padding: 12px 14px;
+    margin-bottom: 10px; border: 2px solid var(--border);
+    transition: border-color .2s, background .2s;
+    cursor: pointer;
+    user-select: none;
+  }
+  .attend-item.presente { border-color: var(--green); background: rgba(67,233,123,0.07); }
+  .attend-item.ausente  { border-color: var(--red);   background: rgba(245,87,108,0.07); }
+  .attend-item.tardanza { border-color: var(--yellow); background: rgba(249,199,79,0.07); }
+
+  .attend-left { display: flex; align-items: center; gap: 12px; }
+  .attend-num { font-family:'Space Mono',monospace; font-size:0.7rem; color:var(--muted); min-width:24px; }
+  .attend-name { font-weight: 700; font-size: 0.95rem; }
+
+  .status-btns { display: flex; gap: 6px; }
+  .st-btn {
+    width: 34px; height: 34px; border-radius: 8px; border: 1.5px solid transparent;
+    font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    background: var(--card); transition: all .15s;
+  }
+  .st-btn:active { transform: scale(0.9); }
+  .st-btn.p { border-color: var(--green); }
+  .st-btn.p.sel { background: var(--green); }
+  .st-btn.a { border-color: var(--red); }
+  .st-btn.a.sel { background: var(--red); }
+  .st-btn.t { border-color: var(--yellow); }
+  .st-btn.t.sel { background: var(--yellow); color: #0f1117; }
+
+  /* SUMMARY BAR */
+  .summary-bar {
+    display: flex; gap: 8px; margin-bottom: 14px;
+  }
+  .sum-pill {
+    flex: 1; background: var(--card2); border-radius: 10px; padding: 8px 6px;
+    text-align: center; border: 1px solid var(--border);
+  }
+  .sum-pill .num { font-family:'Space Mono',monospace; font-size:1.1rem; font-weight:700; }
+  .sum-pill .lbl { font-size:0.62rem; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-top:2px; }
+  .sum-pill.p .num { color: var(--green); }
+  .sum-pill.a .num { color: var(--red); }
+  .sum-pill.t .num { color: var(--yellow); }
+  .sum-pill.total .num { color: var(--accent); }
+
+  /* HISTORY VIEW */
+  .hist-date-card {
+    background: var(--card2); border-radius: 12px; margin-bottom: 10px;
+    border: 1px solid var(--border); overflow: hidden;
+  }
+  .hist-date-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 16px; cursor: pointer;
+    border-bottom: 1px solid transparent;
+    transition: background .2s;
+  }
+  .hist-date-header:active { background: var(--card); }
+  .hist-date-header.open { border-bottom-color: var(--border); }
+  .hist-date-label { font-family:'Space Mono',monospace; font-size:0.85rem; font-weight:700; color:var(--accent); }
+  .hist-date-pills { display: flex; gap: 6px; }
+  .mini-pill { font-size:0.7rem; font-weight:800; padding:3px 8px; border-radius:20px; }
+  .mini-pill.p { background:rgba(67,233,123,0.15); color:var(--green); }
+  .mini-pill.a { background:rgba(245,87,108,0.15); color:var(--red); }
+  .mini-pill.t { background:rgba(249,199,79,0.15); color:var(--yellow); }
+
+  .hist-detail { display: none; padding: 10px 14px; }
+  .hist-detail.open { display: block; }
+  .hist-row { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid var(--border); font-size:0.85rem; }
+  .hist-row:last-child { border:none; }
+  .hist-status { font-size:0.75rem; font-weight:800; padding:3px 10px; border-radius:20px; }
+  .hist-status.presente { background:rgba(67,233,123,0.15); color:var(--green); }
+  .hist-status.ausente  { background:rgba(245,87,108,0.15); color:var(--red); }
+  .hist-status.tardanza { background:rgba(249,199,79,0.15); color:var(--yellow); }
+  .hist-status.— { color:var(--muted); }
+
+  /* REPORT VIEW */
+  .report-student-card {
+    background: var(--card2); border-radius: 12px; margin-bottom: 10px;
+    padding: 14px 16px; border: 1px solid var(--border);
+  }
+  .rsc-name { font-weight: 800; font-size: 0.95rem; margin-bottom: 8px; }
+  .rsc-bars { display: flex; gap: 6px; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 6px; background: var(--border); }
+  .rsc-bar-p { background: var(--green); transition: width .4s; }
+  .rsc-bar-a { background: var(--red); transition: width .4s; }
+  .rsc-bar-t { background: var(--yellow); transition: width .4s; }
+  .rsc-stats { display:flex; gap:10px; font-size:0.75rem; }
+  .rsc-stat { color:var(--muted); }
+  .rsc-stat span { font-weight:800; }
+  .rsc-stat.p span { color: var(--green); }
+  .rsc-stat.a span { color: var(--red); }
+  .rsc-stat.t span { color: var(--yellow); }
+  .rsc-pct { font-family:'Space Mono',monospace; font-size:0.8rem; font-weight:700; color:var(--accent); margin-left:auto; }
+
+  .empty-state { text-align:center; padding:40px 20px; color:var(--muted); }
+  .empty-state .icon { font-size:2.5rem; margin-bottom:12px; }
+  .empty-state p { font-size:0.9rem; }
+
+  .toast {
+    position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--accent); color:#fff; padding:10px 20px; border-radius:30px;
+    font-size:0.85rem; font-weight:800; opacity:0; transition:all .3s; z-index:999; pointer-events:none;
+    white-space: nowrap;
+  }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* IMPORT */
+  .import-area {
+    background: var(--card2); border: 2px dashed var(--border); border-radius: 12px;
+    padding: 16px; margin-top: 10px;
+  }
+  .import-area textarea {
+    width:100%; background:transparent; border:none; color:var(--text);
+    font-family:'Space Mono',monospace; font-size:0.78rem; resize:vertical;
+    outline:none; min-height:80px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📋 Control de <span>Asistencia</span></h1>
+  <div class="header-date" id="headerDate"></div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('asistencia')">✅ Asistencia</div>
+  <div class="tab" onclick="switchTab('alumnos')">👤 Alumnos</div>
+  <div class="tab" onclick="switchTab('historial')">📅 Historial</div>
+  <div class="tab" onclick="switchTab('reporte')">📊 Reporte</div>
+</div>
+
+<!-- ===================== TAB: ASISTENCIA ===================== -->
+<div class="view active" id="view-asistencia">
+  <div class="date-selector">
+    <input type="date" id="attendDate" />
+    <button class="btn btn-primary" onclick="setToday()">Hoy</button>
+  </div>
+
+  <div class="summary-bar">
+    <div class="sum-pill total"><div class="num" id="sumTotal">0</div><div class="lbl">Total</div></div>
+    <div class="sum-pill p"><div class="num" id="sumP">0</div><div class="lbl">Pres.</div></div>
+    <div class="sum-pill a"><div class="num" id="sumA">0</div><div class="lbl">Aus.</div></div>
+    <div class="sum-pill t"><div class="num" id="sumT">0</div><div class="lbl">Tard.</div></div>
+  </div>
+
+  <div id="attendList"></div>
+
+  <button class="btn btn-success btn-full" onclick="saveAttendance()" style="margin-top:8px">
+    💾 Guardar Asistencia
+  </button>
+</div>
+
+<!-- ===================== TAB: ALUMNOS ===================== -->
+<div class="view" id="view-alumnos">
+  <div class="section-card">
+    <div class="section-title">Agregar Alumno</div>
+    <div class="input-row">
+      <input type="text" id="newStudentName" placeholder="Nombre completo..." maxlength="50" />
+      <button class="btn btn-primary" onclick="addStudent()">+</button>
+    </div>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Importar Lista (uno por línea)</div>
+    <div class="import-area">
+      <textarea id="importText" placeholder="Juan García&#10;María López&#10;Carlos Ruiz&#10;..."></textarea>
+    </div>
+    <button class="btn btn-primary btn-full" style="margin-top:10px" onclick="importStudents()">📥 Importar</button>
+  </div>
+
+  <div class="section-card">
+    <div class="section-title">Lista de Alumnos (<span id="studentCount">0</span>)</div>
+    <div id="studentList">
+      <div class="empty-state"><div class="icon">🎓</div><p>No hay alumnos aún.<br>Agrega o importa tu lista.</p></div>
+    </div>
+    <button class="btn btn-danger btn-full" style="margin-top:10px" onclick="clearStudents()">🗑 Limpiar Todo</button>
+  </div>
+</div>
+
+<!-- ===================== TAB: HISTORIAL ===================== -->
+<div class="view" id="view-historial">
+  <div id="historialList">
+    <div class="empty-state"><div class="icon">📅</div><p>No hay registros aún.</p></div>
+  </div>
+  <button class="btn btn-danger btn-full" style="margin-top:8px" onclick="clearHistory()">🗑 Borrar Historial</button>
+</div>
+
+<!-- ===================== TAB: REPORTE ===================== -->
+<div class="view" id="view-reporte">
+  <div class="section-card" style="margin-bottom:14px">
+    <div class="section-title">Filtrar por Alumno</div>
+    <select id="reportFilter" onchange="renderReport()">
+      <option value="">— Todos —</option>
+    </select>
+  </div>
+  <div id="reportList">
+    <div class="empty-state"><div class="icon">📊</div><p>No hay datos aún.</p></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────
+let students = JSON.parse(localStorage.getItem('students') || '[]');
+let history  = JSON.parse(localStorage.getItem('history')  || '{}');
+// history = { 'YYYY-MM-DD': { studentName: 'presente'|'ausente'|'tardanza' } }
+
+function save() {
+  localStorage.setItem('students', JSON.stringify(students));
+  localStorage.setItem('history',  JSON.stringify(history));
+}
+
+// ── UTILS ─────────────────────────────────────────────────────────
+function todayStr() {
+  return new Date().toISOString().slice(0,10);
+}
+function fmtDate(d) {
+  const [y,m,day] = d.split('-');
+  const months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return `${parseInt(day)} ${months[parseInt(m)-1]} ${y}`;
+}
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── HEADER DATE ───────────────────────────────────────────────────
+function updateHeaderDate() {
+  const now = new Date();
+  const days = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  document.getElementById('headerDate').textContent =
+    `${days[now.getDay()]}, ${now.getDate()} de ${months[now.getMonth()]} ${now.getFullYear()}`;
+}
+updateHeaderDate();
+
+// ── TABS ──────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const names = ['asistencia','alumnos','historial','reporte'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  if (name==='historial') renderHistorial();
+  if (name==='reporte')   renderReport();
+  if (name==='alumnos')   renderStudents();
+}
+
+// ── STUDENTS ──────────────────────────────────────────────────────
+function addStudent() {
+  const inp = document.getElementById('newStudentName');
+  const name = inp.value.trim();
+  if (!name) return;
+  if (students.includes(name)) { toast('⚠️ Ya existe ese alumno'); return; }
+  students.push(name);
+  save(); inp.value = '';
+  renderStudents(); renderAttendance();
+  toast('✅ Alumno agregado');
+}
+
+function importStudents() {
+  const lines = document.getElementById('importText').value.split('\n')
+    .map(l => l.trim()).filter(l => l.length > 0);
+  let added = 0;
+  lines.forEach(name => { if (!students.includes(name)) { students.push(name); added++; } });
+  save();
+  document.getElementById('importText').value = '';
+  renderStudents(); renderAttendance();
+  toast(`📥 ${added} alumno(s) importados`);
+}
+
+function removeStudent(name) {
+  if (!confirm(`¿Eliminar a "${name}"?`)) return;
+  students = students.filter(s => s !== name);
+  save(); renderStudents(); renderAttendance();
+  toast('🗑 Alumno eliminado');
+}
+
+function clearStudents() {
+  if (!confirm('¿Eliminar TODOS los alumnos?')) return;
+  students = []; save(); renderStudents(); renderAttendance();
+  toast('🗑 Lista limpiada');
+}
+
+function renderStudents() {
+  const el = document.getElementById('studentList');
+  document.getElementById('studentCount').textContent = students.length;
+  if (!students.length) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">🎓</div><p>No hay alumnos aún.</p></div>';
+    return;
+  }
+  el.innerHTML = students.map((s,i) => `
+    <div class="student-item">
+      <div style="display:flex;align-items:center">
+        <span class="student-num">#${String(i+1).padStart(2,'0')}</span>
+        <span class="student-name">${s}</span>
+      </div>
+      <button class="btn btn-danger" style="padding:6px 12px;font-size:0.8rem" onclick="removeStudent('${s.replace(/'/g,"\\'")}')">✕</button>
+    </div>`).join('');
+
+  // update report filter
+  const sel = document.getElementById('reportFilter');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— Todos —</option>' +
+    students.map(s => `<option value="${s}" ${s===cur?'selected':''}>${s}</option>`).join('');
+}
+
+// ── ATTENDANCE ────────────────────────────────────────────────────
+let currentAttend = {}; // name -> estado
+
+function setToday() {
+  document.getElementById('attendDate').value = todayStr();
+  loadAttendanceForDate();
+}
+
+function loadAttendanceForDate() {
+  const date = document.getElementById('attendDate').value;
+  currentAttend = {};
+  if (history[date]) {
+    Object.assign(currentAttend, history[date]);
+  }
+  renderAttendance();
+}
+
+function renderAttendance() {
+  const el = document.getElementById('attendList');
+  if (!students.length) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">📋</div><p>Agrega alumnos en la pestaña "Alumnos".</p></div>';
+    updateSummary(); return;
+  }
+  el.innerHTML = students.map((s,i) => {
+    const st = currentAttend[s] || '';
+    return `
+    <div class="attend-item ${st}" id="item-${i}" onclick="cycleStatus('${s.replace(/'/g,"\\'")}',${i})">
+      <div class="attend-left">
+        <span class="attend-num">${String(i+1).padStart(2,'0')}</span>
+        <span class="attend-name">${s}</span>
+      </div>
+      <div class="status-btns" onclick="event.stopPropagation()">
+        <button class="st-btn p ${st==='presente'?'sel':''}" onclick="setStatus('${s.replace(/'/g,"\\'")}',${i},'presente')" title="Presente">✅</button>
+        <button class="st-btn t ${st==='tardanza'?'sel':''}" onclick="setStatus('${s.replace(/'/g,"\\'")}',${i},'tardanza')" title="Tardanza">⏰</button>
+        <button class="st-btn a ${st==='ausente'?'sel':''}"  onclick="setStatus('${s.replace(/'/g,"\\'")}',${i},'ausente')"  title="Ausente">❌</button>
+      </div>
+    </div>`;
+  }).join('');
+  updateSummary();
+}
+
+function setStatus(name, idx, status) {
+  currentAttend[name] = currentAttend[name] === status ? '' : status;
+  renderAttendance();
+}
+
+function cycleStatus(name, idx) {
+  const order = ['', 'presente', 'tardanza', 'ausente'];
+  const cur = currentAttend[name] || '';
+  currentAttend[name] = order[(order.indexOf(cur)+1) % order.length];
+  renderAttendance();
+}
+
+function updateSummary() {
+  const vals = Object.values(currentAttend);
+  document.getElementById('sumTotal').textContent = students.length;
+  document.getElementById('sumP').textContent = vals.filter(v=>v==='presente').length;
+  document.getElementById('sumA').textContent = vals.filter(v=>v==='ausente').length;
+  document.getElementById('sumT').textContent = vals.filter(v=>v==='tardanza').length;
+}
+
+function saveAttendance() {
+  const date = document.getElementById('attendDate').value;
+  if (!date) { toast('⚠️ Selecciona una fecha'); return; }
+  if (!students.length) { toast('⚠️ No hay alumnos'); return; }
+  history[date] = { ...currentAttend };
+  save();
+  toast(`💾 Asistencia guardada — ${fmtDate(date)}`);
+}
+
+// ── HISTORIAL ─────────────────────────────────────────────────────
+function renderHistorial() {
+  const el = document.getElementById('historialList');
+  const dates = Object.keys(history).sort().reverse();
+  if (!dates.length) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">📅</div><p>No hay registros aún.</p></div>';
+    return;
+  }
+  el.innerHTML = dates.map(d => {
+    const rec = history[d];
+    const vals = Object.values(rec);
+    const p = vals.filter(v=>v==='presente').length;
+    const a = vals.filter(v=>v==='ausente').length;
+    const t = vals.filter(v=>v==='tardanza').length;
+    const rows = students.map(s => {
+      const st = rec[s] || '—';
+      return `<div class="hist-row">
+        <span>${s}</span>
+        <span class="hist-status ${st}">${st==='presente'?'Presente':st==='ausente'?'Ausente':st==='tardanza'?'Tardanza':'—'}</span>
+      </div>`;
+    }).join('');
+    return `
+    <div class="hist-date-card">
+      <div class="hist-date-header" onclick="toggleHist(this)">
+        <span class="hist-date-label">${fmtDate(d)}</span>
+        <div class="hist-date-pills">
+          <span class="mini-pill p">✅${p}</span>
+          <span class="mini-pill t">⏰${t}</span>
+          <span class="mini-pill a">❌${a}</span>
+        </div>
+      </div>
+      <div class="hist-detail">${rows}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleHist(header) {
+  header.classList.toggle('open');
+  const detail = header.nextElementSibling;
+  detail.classList.toggle('open');
+}
+
+function clearHistory() {
+  if (!confirm('¿Borrar todo el historial?')) return;
+  history = {}; save(); renderHistorial(); toast('🗑 Historial borrado');
+}
+
+// ── REPORTE ───────────────────────────────────────────────────────
+function renderReport() {
+  const el = document.getElementById('reportList');
+  const filter = document.getElementById('reportFilter').value;
+  const dates = Object.keys(history);
+  if (!dates.length || !students.length) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">📊</div><p>No hay datos aún.</p></div>';
+    return;
+  }
+  const list = filter ? [filter] : students;
+  const total = dates.length;
+  el.innerHTML = list.map(s => {
+    let p=0,a=0,t=0;
+    dates.forEach(d => {
+      const st = history[d][s];
+      if (st==='presente') p++;
+      else if (st==='ausente') a++;
+      else if (st==='tardanza') t++;
+    });
+    const pct = total ? Math.round((p/total)*100) : 0;
+    const pW = total ? (p/total*100).toFixed(1) : 0;
+    const aW = total ? (a/total*100).toFixed(1) : 0;
+    const tW = total ? (t/total*100).toFixed(1) : 0;
+    return `
+    <div class="report-student-card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="rsc-name">${s}</div>
+        <div class="rsc-pct">${pct}%</div>
+      </div>
+      <div class="rsc-bars">
+        <div class="rsc-bar-p" style="width:${pW}%"></div>
+        <div class="rsc-bar-t" style="width:${tW}%"></div>
+        <div class="rsc-bar-a" style="width:${aW}%"></div>
+      </div>
+      <div class="rsc-stats">
+        <div class="rsc-stat p">✅ <span>${p}</span> pres.</div>
+        <div class="rsc-stat t">⏰ <span>${t}</span> tard.</div>
+        <div class="rsc-stat a">❌ <span>${a}</span> aus.</div>
+        <div class="rsc-stat" style="margin-left:auto;color:var(--muted)">de <span style="color:var(--text)">${total}</span> clases</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── INIT ──────────────────────────────────────────────────────────
+document.getElementById('attendDate').value = todayStr();
+document.getElementById('attendDate').addEventListener('change', loadAttendanceForDate);
+loadAttendanceForDate();
+renderStudents();
+</script>
+</body>
+</html>
